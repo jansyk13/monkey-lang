@@ -10,7 +10,31 @@ internal class Lexer(
         readChar()
     }
 
-    internal fun readChar() {
+    fun nextToken(): Token {
+        char?.let { ch ->
+            val token = when {
+                ch == '=' -> Token(TokenType.ASSIGN, ch)
+                ch == ';' -> Token(TokenType.SEMICOLON, ch)
+                ch == '(' -> Token(TokenType.LPAREN, ch)
+                ch == ')' -> Token(TokenType.RPAREN, ch)
+                ch == ',' -> Token(TokenType.COMMA, ch)
+                ch == '+' -> Token(TokenType.PLUS, ch)
+                ch == '{' -> Token(TokenType.LBRACE, ch)
+                ch == '}' -> Token(TokenType.RBRACE, ch)
+                ch.isLetter() -> {
+                    val literal = readIdentifier()
+                    val type = lookupType(literal)
+                    Token(type, literal)
+                }
+                else -> Token(TokenType.ILLEGAL, ch)
+            }
+            readChar()
+            return token
+        }
+        return Token(TokenType.EOF, "")
+    }
+
+    private fun readChar() {
         if (readPosition >= input.length) {
             char = null
         } else {
@@ -20,21 +44,21 @@ internal class Lexer(
         readPosition++
     }
 
-    fun nextToken(): Token {
-        char.let {
-            val token = when(it) {
-                '=' -> Token(TokenType.ASSIGN, it)
-                ';' -> Token(TokenType.SEMICOLON, it)
-                '(' -> Token(TokenType.LPAREN, it)
-                ')' -> Token(TokenType.RPAREN, it)
-                ',' -> Token(TokenType.COMMA, it)
-                '+' -> Token(TokenType.PLUS, it)
-                '{' -> Token(TokenType.LBRACE, it)
-                '}' -> Token(TokenType.RBRACE, it)
-                else -> Token(TokenType.EOF, "")
-            }
+    private fun lookupType(literal: String): TokenType = when(literal) {
+        "fn" -> TokenType.FUNCTION
+        "let" -> TokenType.LET
+        else -> TokenType.IDENT
+    }
+
+    private fun readIdentifier(): String {
+        var currentPosition = this.position
+        while (char?.isLetter() == true) {
             readChar()
-            return token
         }
+        return input.subSequence(currentPosition, position).toString()
+    }
+
+    private fun Char.isLetter(): Boolean {
+        return this in 'a'..'z' || this in 'A'..'Z' || this == '_'
     }
 }
