@@ -2,15 +2,12 @@ package io.jansyk.monkeylang
 
 internal class Lexer(
     private val input: String,
-    private var position: Int = 0,
-    private var readPosition: Int = 0,
+    private var index: Int = 0,
     private var char: Char? = null,
 ) {
-    init {
-        readChar()
-    }
 
     fun nextToken(): Token {
+        readChar()
         skipWhitespace()
         char?.let { ch ->
             val token = when {
@@ -59,33 +56,21 @@ internal class Lexer(
                 else ->
                     Token(TokenType.ILLEGAL, ch)
             }
-            readChar()
             return token
         }
         return Token(TokenType.EOF, "")
     }
 
-    private fun skipWhitespace() {
-        while (char == ' ' || char == '\t' || char == '\n' || char == '\r') {
-            readChar()
-        }
-    }
-
     private fun readChar() {
-        if (readPosition >= input.length) {
-            char = null
-        } else {
-            char = input[readPosition]
-        }
-        position = readPosition
-        readPosition++
+        char = peekChar()
+        index++
     }
 
     private fun peekChar(): Char? {
-        return if (readPosition >= input.length) {
+        return if (index + 1 > input.length) {
             null
         } else {
-            input[readPosition]
+            input[index]
         }
     }
 
@@ -101,11 +86,21 @@ internal class Lexer(
     }
 
     private fun readBlock(continuation: (Char?) -> Boolean): String {
-        var currentPosition = this.position
+        var start = this.index - 1
         while (continuation.invoke(peekChar())) {
             readChar()
         }
-        return input.subSequence(currentPosition, readPosition).toString()
+        return input.subSequence(start, index).toString()
+    }
+
+    private fun skipWhitespace() {
+        while (char?.isWhitespace() == true) {
+            readChar()
+        }
+    }
+
+    private fun Char.isWhitespace(): Boolean  {
+        return this == ' ' || this == '\t' || this == '\n' || this == '\r'
     }
 
     private fun Char.isLetter(): Boolean {
